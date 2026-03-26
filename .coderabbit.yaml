@@ -1,0 +1,65 @@
+language: "ko-KR"
+
+tone_instructions: "친근하지만 핵심을 놓치지 않고, iOS 개발 관점에서 개선점을 명확히 설명해줘"
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+
+  high_level_summary: true
+  high_level_summary_in_walkthrough: false
+
+  auto_title_instructions: "iOS 변경사항을 기반으로 명확하고 간결한 PR 제목 생성"
+
+  review_status: true
+  commit_status: true
+
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: false
+
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+
+  suggested_labels: true
+  auto_apply_labels: false
+
+  poem: false
+
+  path_instructions:
+    - path: "**/*.swift"
+      instructions: |
+        다음 사항을 중점적으로 리뷰:
+        - "Prefer SwiftUI best practices when applicable"
+        - "Avoid force unwraps (!)"
+        - "Encourage use of guard statements for early exits"
+        - "Check for memory leaks (weak/unowned in closures)"
+        - "Suggest better naming for readability"
+        - "Follow Apple's Swift API Design Guidelines"
+        - "SwiftUI라면 상태 관리 (@State, @Binding 등) 적절성"
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    ignore_title_keywords:
+      - "WIP"
+      - "draft"
+    drafts: false
+    base_branches:
+      - "develop"
+
+finishing_touches:
+  docstrings:
+    enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  web_search:
+    enabled: true
+
+code_generation:
+  docstrings:
+    language: "ko-KR"
