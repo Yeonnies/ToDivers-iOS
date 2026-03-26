@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  OceanView.swift
 //  ToDivers-iOS
 //
 //  Created by Neon on 3/25/26.
@@ -8,7 +8,7 @@
 import SwiftUI
 import UIKit
 
-struct ContentView: View {
+struct OceanView: View {
     
     @State var progress: CGFloat = 0.5
     @State var startAnimation: CGFloat = 0
@@ -97,5 +97,5 @@ struct WaterWave: Shape {
 }
 
 #Preview {
-    ContentView()
+    OceanView()
 }
