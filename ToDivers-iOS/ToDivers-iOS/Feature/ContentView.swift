@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     
@@ -51,6 +52,15 @@ struct ContentView: View {
                     startAnimation = 360
                 }
             }
+            
+            VStack(alignment: .center) {
+                Text("바다가 아직 고요하지 않아요")
+                    .font(Font.custom("[KIM]sonmas", size: 30))
+                    .foregroundStyle(Color.secondary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 100)
         }
     }
 }
