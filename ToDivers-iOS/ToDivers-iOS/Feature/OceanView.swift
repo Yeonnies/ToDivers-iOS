@@ -6,12 +6,11 @@
 //
 
 import SwiftUI
-import UIKit
 
 struct OceanView: View {
     
-    @State var progress: CGFloat = 0.5
-    @State var startAnimation: CGFloat = 0
+    @State private var progress: CGFloat = 0.5
+    @State private var startAnimation: CGFloat = 0
     
     var body: some View {
         GeometryReader { geo in
@@ -29,7 +28,7 @@ struct OceanView: View {
                     .opacity(0.5)
                     .blur(radius: 30)
                 
-                WaterWave(progress: 0.5, waveHeight: 0.05, offset: startAnimation)
+                WaterWave(progress: progress, waveHeight: 0.05, offset: startAnimation)
                     .fill(
                         LinearGradient(
                             colors: [
