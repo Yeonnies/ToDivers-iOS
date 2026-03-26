@@ -48,7 +48,7 @@ struct ContentView: View {
             .ignoresSafeArea()
             .onAppear {
                 withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)){
-                    startAnimation = geo.size.width
+                    startAnimation = 360
                 }
             }
         }
@@ -71,9 +71,10 @@ struct WaterWave: Shape {
             let progressHeight: CGFloat = (1 - progress) * rect.height
             let height = waveHeight * rect.height
             
-            for value in stride(from: 0, to: rect.width, by: 2) {
+            for value in stride(from: 0, through: rect.width, by: 2) {
                 let x: CGFloat = value
-                let sine: CGFloat = sin(Angle(degrees: value + offset).radians)
+                /// 파도의 높이 계산
+                let sine: CGFloat = sin(Angle(degrees: value * 0.4 + offset).radians)
                 let y: CGFloat = progressHeight + (height * sine)
                 
                 path.addLine(to: CGPoint(x: x, y: y))
@@ -85,6 +86,6 @@ struct WaterWave: Shape {
     }
 }
 
-//#Preview {
-//    ContentView()
-//}
+#Preview {
+    ContentView()
+}
