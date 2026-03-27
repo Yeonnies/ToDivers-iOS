@@ -7,10 +7,14 @@
 
 import SwiftUI
 
+import AVFAudio
+
 struct OceanView: View {
     
-    @State private var progress: CGFloat = 0.5
+    ///물 높이
+    @State private var progress: CGFloat = 0.6
     @State private var startAnimation: CGFloat = 0
+    @StateObject private var monitor = SoundLevelMonitor()
     
     var body: some View {
         GeometryReader { geo in
@@ -47,6 +51,8 @@ struct OceanView: View {
             }
             .ignoresSafeArea()
             .onAppear {
+                monitor.startMonitoring()
+                
                 withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)){
                     startAnimation = 360
                 }
@@ -61,12 +67,34 @@ struct OceanView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 100)
         }
+        .onAppear {
+            requestMicrophonePermission { granted in
+                if granted {
+                    monitor.startMonitoring()
+                } else {
+                    print("권한 없음")
+                }
+            }
+
+            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                startAnimation = 360
+            }
+        }
+    }
+}
+
+extension OceanView {
+    func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
+        AVAudioApplication.requestRecordPermission { granted in completion(granted)
+        }
     }
 }
 
 struct WaterWave: Shape {
     var progress: CGFloat
+    /// 파도 출렁임
     var waveHeight: CGFloat
+    /// 좌우 흐름
     var offset: CGFloat
     var animatableData: CGFloat {
         get {offset}
@@ -93,8 +121,4 @@ struct WaterWave: Shape {
             path.addLine(to: CGPoint(x: 0, y: rect.height))
         }
     }
-}
-
-#Preview {
-    OceanView()
 }
