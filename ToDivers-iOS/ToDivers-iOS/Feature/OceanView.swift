@@ -17,15 +17,13 @@ struct OceanView: View {
     @StateObject private var monitor = SoundLevelMonitor()
     
     var normalizedLevel: CGFloat {
-        let level = CGFloat(monitor.decibels)
-        return min(max(level / 100, 0), 1)
+        min(max((CGFloat(monitor.decibels) - 40) / 40, 0), 1)
     }
     
     var body: some View {
         TimelineView(.animation) { timeline in
             
-            let normalized = min(max(CGFloat(monitor.decibels) / 100, 0), 1)
-            let smooth = normalized * 0.1 + (1 - 0.1) * progress
+            let normalized = min(max((CGFloat(monitor.decibels) - 40) / 40, 0), 1)
             
             ZStack {
                 LinearGradient(
@@ -46,7 +44,7 @@ struct OceanView: View {
                     progress: progress,
                     waveHeight: 0.05,
                     offset: startAnimation,
-                    level: smooth
+                    level: normalizedLevel
                 )
                     .fill(
                         LinearGradient(
@@ -84,13 +82,15 @@ struct OceanView: View {
                 }
             }
             .task {
+                var time: CGFloat = 0
+                
                 while true {
-                    let normalized = min(max(CGFloat(monitor.decibels) / 100, 0), 1)
-                    let smooth = normalized * 0.1 + (1 - 0.1) * progress
+                    let normalized = min(max(CGFloat(monitor.decibels) - 40 / 40, 0), 1)
+                    time += 0.05
                     
                     print("🔥 decibels:", monitor.decibels)
                     
-                    startAnimation += 1 + smooth * 5
+                    startAnimation += 1.5 + normalized * 4.0
                     
                     try? await Task.sleep(nanoseconds: 16_000_000) // ~60fps
                 }
@@ -114,8 +114,9 @@ struct WaterWave: Shape {
     /// 좌우 흐름
     var offset: CGFloat
     var level: CGFloat
+    
     var animatableData: CGFloat {
-        get {offset}
+        get {AnimatableData(offset)}
         set {offset = newValue}
     }
     
@@ -124,11 +125,11 @@ struct WaterWave: Shape {
             path.move(to: .zero)
             
             let progressHeight: CGFloat = (1 - progress) * rect.height
-            let height = waveHeight * rect.height 
+            let height = waveHeight * rect.height * (1.0 + level * 2.0)
             
             for value in stride(from: 0, through: rect.width, by: 2) {
                 let x: CGFloat = value
-                let frequency = 0.3 + (level * 1.2)
+                let frequency = 0.4 + (level * 1.2)
                 /// 파도의 높이 계산
                 let sine: CGFloat = sin(Angle(degrees: value * frequency + offset).radians)
                 let y: CGFloat = progressHeight + (height * sine)
