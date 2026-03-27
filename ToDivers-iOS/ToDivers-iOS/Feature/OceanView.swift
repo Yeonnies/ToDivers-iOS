@@ -16,8 +16,17 @@ struct OceanView: View {
     @State private var startAnimation: CGFloat = 0
     @StateObject private var monitor = SoundLevelMonitor()
     
+    var normalizedLevel: CGFloat {
+        let level = CGFloat(monitor.decibels)
+        return min(max(level / 100, 0), 1)
+    }
+    
     var body: some View {
-        GeometryReader { geo in
+        TimelineView(.animation) { timeline in
+            
+            let normalized = min(max(CGFloat(monitor.decibels) / 100, 0), 1)
+            let smooth = normalized * 0.1 + (1 - 0.1) * progress
+            
             ZStack {
                 LinearGradient(
                     colors: [
@@ -32,7 +41,13 @@ struct OceanView: View {
                     .opacity(0.5)
                     .blur(radius: 30)
                 
-                WaterWave(progress: progress, waveHeight: 0.05, offset: startAnimation)
+//                WaterWave(progress: progress, waveHeight: 0.05, offset: startAnimation)
+                WaterWave(
+                    progress: progress,
+                    waveHeight: 0.05,
+                    offset: startAnimation,
+                    level: smooth
+                )
                     .fill(
                         LinearGradient(
                             colors: [
@@ -48,6 +63,15 @@ struct OceanView: View {
                             .opacity(0.5)
                             .blur(radius: 30)
                     }
+                
+                VStack(alignment: .center) {
+                    Text("바다가 아직 고요하지 않아요")
+                        .font(Font.custom("[KIM]sonmas", size: 30))
+                        .foregroundStyle(Color.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 100)
             }
             .ignoresSafeArea()
             .onAppear {
@@ -58,37 +82,38 @@ struct OceanView: View {
                         print("권한 없음")
                     }
                 }
-                
-                withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)){
-                    startAnimation = 360
+            }
+            .task {
+                while true {
+                    let normalized = min(max(CGFloat(monitor.decibels) / 100, 0), 1)
+                    let smooth = normalized * 0.1 + (1 - 0.1) * progress
+                    
+                    print("🔥 decibels:", monitor.decibels)
+                    
+                    startAnimation += 1 + smooth * 5
+                    
+                    try? await Task.sleep(nanoseconds: 16_000_000) // ~60fps
                 }
             }
-            
-            VStack(alignment: .center) {
-                Text("바다가 아직 고요하지 않아요")
-                    .font(Font.custom("[KIM]sonmas", size: 30))
-                    .foregroundStyle(Color.secondary)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 100)
         }
     }
 }
 
 extension OceanView {
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
-        AVAudioApplication.requestRecordPermission { granted in completion(granted)
+        AVAudioApplication.requestRecordPermission { granted in
+            completion(granted)
         }
     }
 }
 
 struct WaterWave: Shape {
     var progress: CGFloat
-    /// 파도 출렁임
+    /// 진촉
     var waveHeight: CGFloat
     /// 좌우 흐름
     var offset: CGFloat
+    var level: CGFloat
     var animatableData: CGFloat {
         get {offset}
         set {offset = newValue}
@@ -99,12 +124,13 @@ struct WaterWave: Shape {
             path.move(to: .zero)
             
             let progressHeight: CGFloat = (1 - progress) * rect.height
-            let height = waveHeight * rect.height
+            let height = waveHeight * rect.height 
             
             for value in stride(from: 0, through: rect.width, by: 2) {
                 let x: CGFloat = value
+                let frequency = 0.3 + (level * 1.2)
                 /// 파도의 높이 계산
-                let sine: CGFloat = sin(Angle(degrees: value * 0.4 + offset).radians)
+                let sine: CGFloat = sin(Angle(degrees: value * frequency + offset).radians)
                 let y: CGFloat = progressHeight + (height * sine)
                 
                 path.addLine(to: CGPoint(x: x, y: y))
