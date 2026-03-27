@@ -51,7 +51,13 @@ struct OceanView: View {
             }
             .ignoresSafeArea()
             .onAppear {
-                monitor.startMonitoring()
+                requestMicrophonePermission { granted in
+                    if granted {
+                        monitor.startMonitoring()
+                    } else {
+                        print("권한 없음")
+                    }
+                }
                 
                 withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)){
                     startAnimation = 360
@@ -66,19 +72,6 @@ struct OceanView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 100)
-        }
-        .onAppear {
-            requestMicrophonePermission { granted in
-                if granted {
-                    monitor.startMonitoring()
-                } else {
-                    print("권한 없음")
-                }
-            }
-
-            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                startAnimation = 360
-            }
         }
     }
 }
