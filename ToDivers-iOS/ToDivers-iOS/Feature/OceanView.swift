@@ -17,14 +17,14 @@ struct OceanView: View {
     @StateObject private var monitor = SoundLevelMonitor()
     
     var normalizedLevel: CGFloat {
-        min(max((CGFloat(monitor.decibels) - 40) / 40, 0), 1)
+        let db = CGFloat(monitor.decibels)
+        guard db >= 53 else { return 0 }
+        return min(max((db - 53) / 27, 0), 1)
     }
     
     var body: some View {
         TimelineView(.animation) { timeline in
-            
-            let normalized = min(max((CGFloat(monitor.decibels) - 40) / 40, 0), 1)
-            
+                        
             ZStack {
                 LinearGradient(
                     colors: [
@@ -69,7 +69,7 @@ struct OceanView: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.top, 100)
+                .padding(.top, 150)
             }
             .ignoresSafeArea()
             .onAppear {
@@ -85,14 +85,14 @@ struct OceanView: View {
                 var time: CGFloat = 0
                 
                 while true {
-                    let normalized = min(max(CGFloat(monitor.decibels) - 40 / 40, 0), 1)
+                    let normalized = min(max((CGFloat(monitor.decibels) - 40) / 40, 0), 1)
                     time += 0.05
                     
-                    print("🔥 decibels:", monitor.decibels)
+//                    print("🔥 decibels:", monitor.decibels)
                     
                     startAnimation += 1.5 + normalized * 4.0
                     
-                    try? await Task.sleep(nanoseconds: 16_000_000) // ~60fps
+                    try? await Task.sleep(nanoseconds: 16_000_000)
                 }
             }
         }
@@ -115,9 +115,12 @@ struct WaterWave: Shape {
     var offset: CGFloat
     var level: CGFloat
     
-    var animatableData: CGFloat {
-        get {AnimatableData(offset)}
-        set {offset = newValue}
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(offset, level) }
+        set {
+            offset = newValue.first
+            level = newValue.second
+        }
     }
     
     func path(in rect: CGRect) -> Path {
