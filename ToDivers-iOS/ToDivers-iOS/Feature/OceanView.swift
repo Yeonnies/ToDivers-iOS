@@ -9,12 +9,18 @@ import SwiftUI
 
 import AVFAudio
 
+enum OceanState {
+    case noisy
+    case calm
+}
+
 struct OceanView: View {
     
     ///물 높이
     @State private var progress: CGFloat = 0.6
     @State private var startAnimation: CGFloat = 0
     @StateObject private var monitor = SoundLevelMonitor()
+    @State private var oceanState: OceanState = .noisy
     
     var normalizedLevel: CGFloat {
         let db = CGFloat(monitor.decibels)
@@ -63,9 +69,17 @@ struct OceanView: View {
                     }
                 
                 VStack(alignment: .center) {
-                    Text("바다가 아직 고요하지 않아요")
+                    Group {
+                            if oceanState == .noisy {
+                                Text("바다가 아직 고요하지 않아요")
+                            } else {
+                                Text("이제 더 깊은 곳으로 내려가 볼게요.")
+                            }
+                        }
                         .font(Font.custom("[KIM]sonmas", size: 30))
                         .foregroundStyle(Color.secondary)
+                        .multilineTextAlignment(.center)
+                        .transition(.opacity)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
@@ -85,14 +99,25 @@ struct OceanView: View {
                 var time: CGFloat = 0
                 
                 while true {
-                    let normalized = min(max((CGFloat(monitor.decibels) - 40) / 40, 0), 1)
-                    time += 0.05
-                    
 //                    print("🔥 decibels:", monitor.decibels)
                     
-                    startAnimation += 1.5 + normalized * 4.0
+                    startAnimation += 1.5 + normalizedLevel * 4.0
                     
-                    try? await Task.sleep(nanoseconds: 16_000_000)
+                    try? await Task.sleep(nanoseconds: 16_000_000) // 1초에 약 60번 반복
+                    
+                    if monitor.decibels <= 53 {
+                        time += 0.016
+                    } else {
+                        time = max(time - 0.05, 0)
+                    }
+                    
+                    let newState: OceanState = (time >= 5) ? .calm : .noisy
+
+                    if newState != oceanState {
+                        withAnimation(.easeInOut(duration: 1.5)) {
+                            oceanState = newState
+                        }
+                    }
                 }
             }
         }
