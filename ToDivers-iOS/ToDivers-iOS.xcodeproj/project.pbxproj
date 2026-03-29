@@ -270,6 +270,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "ToDivers-iOS/Global/Resource/Info.plist";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "주변 소리 크기에 따라 바다 애니메이션과 안내 문구를 조정하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -303,6 +304,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "ToDivers-iOS/Global/Resource/Info.plist";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "주변 소리 크기에 따라 바다 애니메이션과 안내 문구를 조정하기 위해 마이크 접근이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
