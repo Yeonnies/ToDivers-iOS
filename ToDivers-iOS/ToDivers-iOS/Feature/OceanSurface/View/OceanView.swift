@@ -95,15 +95,23 @@ struct OceanView: View {
                     }
                 }
             }
+            .onDisappear {
+                monitor.stopMonitoring()
+            }
             .task {
                 var time: CGFloat = 0
+                let clock = ContinuousClock()
                 
-                while true {
+                while !Task.isCancelled {
 //                    print("🔥 decibels:", monitor.decibels)
                     
                     startAnimation += 1.5 + normalizedLevel * 4.0
                     
-                    try? await Task.sleep(nanoseconds: 16_000_000) // 1초에 약 60번 반복
+                    do {
+                        try await clock.sleep(for: .milliseconds(16))
+                    } catch {
+                        break
+                    }
                     
                     if monitor.decibels <= 53 {
                         time += 0.016

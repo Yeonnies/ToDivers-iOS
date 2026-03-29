@@ -13,28 +13,41 @@ import Combine
 class SoundLevelMonitor: ObservableObject {
     
     private var audioEngine = AVAudioEngine()
+    private var isMonitoring = false
     
     /// 현재 소리 크기 상태값
     @Published var decibels: Float = 0.0
     
     func startMonitoring() {
+        /// 재진입 방지
+        guard !isMonitoring else { return }
         
         /// 마이크 입력
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+            guard let self else { return }
+            
             let level = self.getSoundLevel(buffer: buffer) // buffer 크기 계산
             DispatchQueue.main.async {
                 self.decibels = self.decibels * 0.8 + level * 0.2 // 데시벨 업데이트
             }
         }
-        try? audioEngine.start()
+        
+        do {
+            try audioEngine.start()
+            isMonitoring = true
+        } catch {
+            print("AudioEngine start failed:", error)
+        }
     }
     
     func stopMonitoring() {
+        guard isMonitoring else { return }
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
+        isMonitoring = false
     }
     
     private func getSoundLevel(buffer: AVAudioPCMBuffer) -> Float {
