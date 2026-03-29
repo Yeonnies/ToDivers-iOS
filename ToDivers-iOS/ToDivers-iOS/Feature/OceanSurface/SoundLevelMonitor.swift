@@ -39,6 +39,7 @@ class SoundLevelMonitor: ObservableObject {
             try audioEngine.start()
             isMonitoring = true
         } catch {
+            inputNode.removeTap(onBus: 0)
             print("AudioEngine start failed:", error)
         }
     }
