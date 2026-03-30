@@ -22,6 +22,8 @@ struct OceanView: View {
     @StateObject private var monitor = SoundLevelMonitor()
     @State private var oceanState: OceanState = .noisy
     
+    @State private var isDive = false
+    
     var normalizedLevel: CGFloat {
         let db = CGFloat(monitor.decibels)
         guard db >= 53 else { return 0 }
@@ -30,100 +32,74 @@ struct OceanView: View {
     
     var body: some View {
         TimelineView(.animation) { timeline in
-                        
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color.blue.opacity(0.6),
-                        Color.indigo.opacity(0.8)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+            
+            oceanContent
+//                .animation(.easeInOut(duration: 1.2), value: isDive)
+                .opacity(isDive ? 0 : 1)
+                .scaleEffect(isDive ? 1.1 : 1.0)
+                .blur(radius: isDive ? 10 : 0)
+                .animation(.easeInOut(duration: 1.2), value: isDive)
+            
+            if isDive {
+                DiveView()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(1) // 뷰의 표시 순서를 조절
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            requestMicrophonePermission { granted in
+                if granted {
+                    monitor.startMonitoring()
+                } else {
+                    print("권한 없음")
+                }
+            }
+        }
+        .onDisappear {
+            monitor.stopMonitoring()
+        }
+        .task {
+            var time: CGFloat = 0
+            let clock = ContinuousClock()
+            
+            while !Task.isCancelled {
+                //                    print("🔥 decibels:", monitor.decibels)
                 
-                Color.white
-                    .opacity(0.5)
-                    .blur(radius: 30)
+                startAnimation += 1.5 + normalizedLevel * 4.0
                 
-//                WaterWave(progress: progress, waveHeight: 0.05, offset: startAnimation)
-                WaterWave(
-                    progress: progress,
-                    waveHeight: 0.05,
-                    offset: startAnimation,
-                    level: normalizedLevel
-                )
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.blue.opacity(0.6),
-                                Color.indigo.opacity(0.8)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .overlay {
-                        Color.white
-                            .opacity(0.5)
-                            .blur(radius: 30)
+                do {
+                    try await clock.sleep(for: .milliseconds(16))
+                } catch {
+                    break
+                }
+                
+                if monitor.decibels <= 53 {
+                    time += 0.016
+                } else {
+                    time = max(time - 0.05, 0)
+                }
+                
+                let newState: OceanState = (time >= 5) ? .calm : .noisy
+                
+                if newState != oceanState {
+                    withAnimation(.easeInOut(duration: 1.5)) {
+                        oceanState = newState
                     }
-                
-                VStack(alignment: .center) {
-                    Group {
-                            if oceanState == .noisy {
-                                Text("바다가 아직 고요하지 않아요")
-                            } else {
-                                Text("이제 더 깊은 곳으로 내려가 볼게요.")
+                    
+                    if newState == .calm {
+                        Task {
+                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            
+                            await MainActor.run {
+                                withAnimation(.easeInOut(duration: 1.2)) {
+                                    isDive = true
+                                }
                             }
                         }
-                        .font(Font.custom("[KIM]sonmas", size: 30))
-                        .foregroundStyle(Color.secondary)
-                        .multilineTextAlignment(.center)
-                        .transition(.opacity)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 150)
-            }
-            .ignoresSafeArea()
-            .onAppear {
-                requestMicrophonePermission { granted in
-                    if granted {
-                        monitor.startMonitoring()
                     } else {
-                        print("권한 없음")
-                    }
-                }
-            }
-            .onDisappear {
-                monitor.stopMonitoring()
-            }
-            .task {
-                var time: CGFloat = 0
-                let clock = ContinuousClock()
-                
-                while !Task.isCancelled {
-//                    print("🔥 decibels:", monitor.decibels)
-                    
-                    startAnimation += 1.5 + normalizedLevel * 4.0
-                    
-                    do {
-                        try await clock.sleep(for: .milliseconds(16))
-                    } catch {
-                        break
-                    }
-                    
-                    if monitor.decibels <= 53 {
-                        time += 0.016
-                    } else {
-                        time = max(time - 0.05, 0)
-                    }
-                    
-                    let newState: OceanState = (time >= 5) ? .calm : .noisy
-
-                    if newState != oceanState {
-                        withAnimation(.easeInOut(duration: 1.5)) {
-                            oceanState = newState
+                        withAnimation {
+                            isDive = false
                         }
                     }
                 }
@@ -136,6 +112,63 @@ extension OceanView {
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
         AVAudioApplication.requestRecordPermission { granted in
             completion(granted)
+        }
+    }
+    
+    var oceanContent: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.blue.opacity(0.6),
+                    Color.indigo.opacity(0.8)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            
+            Color.white
+                .opacity(0.5)
+                .blur(radius: 30)
+            
+            //                WaterWave(progress: progress, waveHeight: 0.05, offset: startAnimation)
+            WaterWave(
+                progress: progress,
+                waveHeight: 0.05,
+                offset: startAnimation,
+                level: normalizedLevel
+            )
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.blue.opacity(0.6),
+                        Color.indigo.opacity(0.8)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay {
+                Color.white
+                    .opacity(0.5)
+                    .blur(radius: 30)
+            }
+            
+            VStack(alignment: .center) {
+                Group {
+                    if oceanState == .noisy {
+                        Text("바다가 아직 고요하지 않아요")
+                    } else {
+                        Text("이제 더 깊은 곳으로 내려가 볼게요.")
+                    }
+                }
+                .font(Font.custom("[KIM]sonmas", size: 30))
+                .foregroundStyle(Color.secondary)
+                .multilineTextAlignment(.center)
+                .transition(.opacity)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 150)
         }
     }
 }
