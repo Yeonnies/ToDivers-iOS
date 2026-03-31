@@ -7,6 +7,13 @@
 
 import SwiftUI
 
+enum DiveViewType {
+    case smallDive
+    case mediumDive
+    case bigDive
+    case superBigDive
+}
+
 struct DiveView: View {
     var body: some View {
         ZStack {
@@ -23,7 +30,5 @@ struct DiveView: View {
                 .opacity(0.5)
                 .blur(radius: 30)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea(edges: .all)
     }
 }
