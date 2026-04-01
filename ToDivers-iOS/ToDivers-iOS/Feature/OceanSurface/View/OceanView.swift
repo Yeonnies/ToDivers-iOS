@@ -22,6 +22,8 @@ struct OceanView: View {
     @StateObject private var monitor = SoundLevelMonitor()
     @State private var oceanState: OceanState = .noisy
     
+    @State private var isDive = false
+    
     var normalizedLevel: CGFloat {
         let db = CGFloat(monitor.decibels)
         guard db >= 53 else { return 0 }
@@ -30,7 +32,6 @@ struct OceanView: View {
     
     var body: some View {
         TimelineView(.animation) { timeline in
-                        
             ZStack {
                 LinearGradient(
                     colors: [
@@ -45,85 +46,79 @@ struct OceanView: View {
                     .opacity(0.5)
                     .blur(radius: 30)
                 
-//                WaterWave(progress: progress, waveHeight: 0.05, offset: startAnimation)
-                WaterWave(
-                    progress: progress,
-                    waveHeight: 0.05,
-                    offset: startAnimation,
-                    level: normalizedLevel
-                )
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.blue.opacity(0.6),
-                                Color.indigo.opacity(0.8)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .overlay {
-                        Color.white
-                            .opacity(0.5)
-                            .blur(radius: 30)
-                    }
+                oceanContent
+                    .opacity(isDive ? 0 : 1)
+                    .scaleEffect(isDive ? 1.1 : 1.0)
+                    .blur(radius: isDive ? 10 : 0)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .animation(.easeInOut(duration: 1.2), value: isDive)
                 
-                VStack(alignment: .center) {
-                    Group {
-                            if oceanState == .noisy {
-                                Text("바다가 아직 고요하지 않아요")
-                            } else {
-                                Text("이제 더 깊은 곳으로 내려가 볼게요.")
+                if isDive {
+                    DiveView(monitor: monitor)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(1)
+                        .clipShape(WaveClip(offset: startAnimation))
+                        .offset(y: -50)
+                        .padding(.bottom, -100)
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            requestMicrophonePermission { granted in
+                if granted {
+                    monitor.startMonitoring()
+                } else {
+                    print("권한 없음")
+                }
+            }
+        }
+        .onDisappear {
+            monitor.stopMonitoring()
+        }
+        .task {
+            var time: CGFloat = 0
+            let clock = ContinuousClock()
+            
+            while !Task.isCancelled {
+                //                    print("🔥 decibels:", monitor.decibels)
+                
+                startAnimation += 1.5 + normalizedLevel * 4.0
+                
+                do {
+                    try await clock.sleep(for: .milliseconds(16))
+                } catch {
+                    break
+                }
+                
+                // MARK: - 추후 53으로 조절
+                if monitor.decibels <= 70 {
+                    time += 0.016
+                } else {
+                    time = max(time - 0.05, 0)
+                }
+                
+                let newState: OceanState = (time >= 5) ? .calm : .noisy
+                
+                if newState != oceanState && !isDive {
+                    withAnimation(.easeInOut(duration: 1.5)) {
+                        oceanState = newState
+                    }
+                    
+                    if newState == .calm {
+                        Task {
+                            
+                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            
+                            await MainActor.run {
+                                withAnimation(.easeInOut(duration: 1.2)) {
+                                    isDive = true
+                                }
                             }
                         }
-                        .font(Font.custom("[KIM]sonmas", size: 30))
-                        .foregroundStyle(Color.secondary)
-                        .multilineTextAlignment(.center)
-                        .transition(.opacity)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 150)
-            }
-            .ignoresSafeArea()
-            .onAppear {
-                requestMicrophonePermission { granted in
-                    if granted {
-                        monitor.startMonitoring()
                     } else {
-                        print("권한 없음")
-                    }
-                }
-            }
-            .onDisappear {
-                monitor.stopMonitoring()
-            }
-            .task {
-                var time: CGFloat = 0
-                let clock = ContinuousClock()
-                
-                while !Task.isCancelled {
-//                    print("🔥 decibels:", monitor.decibels)
-                    
-                    startAnimation += 1.5 + normalizedLevel * 4.0
-                    
-                    do {
-                        try await clock.sleep(for: .milliseconds(16))
-                    } catch {
-                        break
-                    }
-                    
-                    if monitor.decibels <= 53 {
-                        time += 0.016
-                    } else {
-                        time = max(time - 0.05, 0)
-                    }
-                    
-                    let newState: OceanState = (time >= 5) ? .calm : .noisy
-
-                    if newState != oceanState {
-                        withAnimation(.easeInOut(duration: 1.5)) {
-                            oceanState = newState
+                        withAnimation {
+                            isDive = false
                         }
                     }
                 }
@@ -136,6 +131,50 @@ extension OceanView {
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
         AVAudioApplication.requestRecordPermission { granted in
             completion(granted)
+        }
+    }
+    
+    var oceanContent: some View {
+        ZStack {
+//            WaterWave(progress: progress, waveHeight: 0.05, offset: startAnimation)
+            WaterWave(
+                progress: progress,
+                waveHeight: 0.05,
+                offset: startAnimation,
+                level: normalizedLevel
+            )
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.blue.opacity(0.6),
+                        Color.indigo.opacity(0.8)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay {
+                Color.white
+                    .opacity(0.5)
+                    .blur(radius: 30)
+            }
+            
+            VStack(alignment: .center) {
+                Group {
+                    if oceanState == .noisy {
+                        Text("바다가 조금 더 고요해지면, 깊이 들어갈 수 있어요")
+                    } else {
+                        Text("이제, 들어가볼까요?")
+                    }
+                }
+                .font(Font.custom("[KIM]sonmas", size: 30))
+                .foregroundStyle(Color.secondary)
+                .multilineTextAlignment(.center)
+                .transition(.opacity)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 150)
         }
     }
 }
@@ -175,6 +214,31 @@ struct WaterWave: Shape {
             
             path.addLine(to: CGPoint(x: rect.width, y: rect.height))
             path.addLine(to: CGPoint(x: 0, y: rect.height))
+        }
+    }
+}
+
+struct WaveClip: Shape {
+    var offset: CGFloat
+    
+    var animatableData: CGFloat {
+        get { offset }
+        set { offset = newValue }
+    }
+    
+    func path(in rect: CGRect) -> Path {
+        return Path { path in
+            
+            path.move(to: CGPoint(x: 0, y: 20))
+            for value in stride(from: 0, through: rect.width, by: 2) {
+                let sine = sin(Angle(degrees: value * 0.8 + offset).radians)
+                let y = 20 + sine * 15
+                path.addLine(to: CGPoint(x: value, y: y))
+            }
+            
+            path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+            path.addLine(to: CGPoint(x: 0, y: rect.height))
+            path.closeSubpath()
         }
     }
 }
