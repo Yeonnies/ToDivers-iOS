@@ -139,7 +139,7 @@ struct DiveView: View {
                 
                 let amplitude = (dbHistory.max() ?? 0) - (dbHistory.min() ?? 0)
                 
-                /// 올라가다가 내려가거나, 내려가다가 올라가는 방향 전환 순간 데시벨 차이가 8~25로 날 때를 호흡이라 인식
+                /// 올라가다가 내려가거나, 내려가다가 올라가는 방향 전환 순간 데시벨 차이가 20 이상일 때를 호흡이라 인식
                 if direction != lastDirection && amplitude >= 20 {
                     breathCount += 1
                     print("🌬 호흡")
