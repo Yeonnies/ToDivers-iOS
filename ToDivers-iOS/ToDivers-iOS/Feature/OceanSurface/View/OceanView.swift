@@ -54,7 +54,7 @@ struct OceanView: View {
                     .animation(.easeInOut(duration: 1.2), value: isDive)
                 
                 if isDive {
-                    DiveView()
+                    DiveView(monitor: monitor)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .zIndex(1)
                         .clipShape(WaveClip(offset: startAnimation))
@@ -91,6 +91,7 @@ struct OceanView: View {
                     break
                 }
                 
+                // MARK: - 추후 53으로 조절
                 if monitor.decibels <= 70 {
                     time += 0.016
                 } else {
