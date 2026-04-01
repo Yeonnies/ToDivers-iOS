@@ -133,18 +133,15 @@ struct DiveView: View {
                     continue
                 }
                 
-                /// 소리가 커지는 중(+1)인지 작아지는 중(-1)인지 인식
-                let diff = dbHistory.last! - dbHistory[dbHistory.count - 2]
-                let direction = diff > 0 ? 1 : -1
+                let prev = dbHistory[dbHistory.count - 2]
+                let diff = abs(current - prev)
                 
-                let amplitude = (dbHistory.max() ?? 0) - (dbHistory.min() ?? 0)
-                
-                /// 올라가다가 내려가거나, 내려가다가 올라가는 방향 전환 순간 데시벨 차이가 20 이상일 때를 호흡이라 인식
-                if direction != lastDirection && amplitude >= 20 {
+                if diff >= 7 {
                     breathCount += 1
-                    print("🌬 호흡")
+                    print("🌬 호흡", diff)
                 }
-                if breathCount >= 4 {
+                
+                if breathCount >= 3 {
                     breathCount = 0
                     
                     withAnimation(.easeInOut(duration: 1.5)){
@@ -156,9 +153,7 @@ struct DiveView: View {
                         }
                     }
                 }
-                
-                lastDirection = direction
-                
+                                
                 try? await Task.sleep(nanoseconds: 16_000_000)
             }
         }
