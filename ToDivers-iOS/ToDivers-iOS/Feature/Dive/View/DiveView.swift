@@ -18,6 +18,11 @@ struct DiveView: View {
     
     @ObservedObject var monitor: SoundLevelMonitor
     
+    /// 가이딩 문구
+    @State private var showGuideText = false
+    @State private var hasShownIntro = false
+    @State private var isResetting = false
+    
     func oceanColor(depth: CGFloat) -> (top: Color, mid: Color, bottom: Color) {
         
         let top = Color(
@@ -53,7 +58,6 @@ struct DiveView: View {
     
     var body: some View {
         ZStack {
-            
             MeshGradient(
                 width: 3,
                 height: 3,
@@ -95,6 +99,20 @@ struct DiveView: View {
             )
             .ignoresSafeArea()
             .blendMode(.multiply)
+            
+            VStack {
+                Spacer()
+                if showGuideText {
+                    Spacer()
+                    Text(depthLevel < 1 ? "ⓘ 호흡할 때마다 더 깊은 곳으로 잠수해요." : "ⓘ 가장 깊은 곳까지 도달했어요. \n다시 수면위로 올라갑니다.")
+                        .font(Font.custom("[KIM]sonmas", size: 16))
+                        .foregroundStyle(Color.secondary)
+                        .multilineTextAlignment(.center)
+                        .transition(.opacity)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.bottom, 100)
         }
         .animation(.easeInOut(duration: 0.6), value: depthLevel)
         
@@ -112,6 +130,24 @@ struct DiveView: View {
                 .repeatForever(autoreverses: true)
             ) {
                 animate2.toggle()
+            }
+            
+            if !hasShownIntro {
+                hasShownIntro = true
+                Task {
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5초
+                    await MainActor.run {
+                        withAnimation(.easeInOut(duration: 0.5)){
+                            showGuideText = true
+                        }
+                    }
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    await MainActor.run {
+                        withAnimation(.easeInOut(duration: 0.5)){
+                            showGuideText = false
+                        }
+                    }
+                }
             }
         }
         
@@ -135,7 +171,7 @@ struct DiveView: View {
                 
                 if diff >= 7 {
                     withAnimation(.easeInOut(duration: 1.2)) {
-                        depthLevel += 0.03
+                        depthLevel += 0.1
                         depthLevel = min(depthLevel, 1.0)
                     }
                     
@@ -143,6 +179,35 @@ struct DiveView: View {
                 }
                 
                 try? await Task.sleep(nanoseconds: 16_000_000)
+                
+                if depthLevel >= 1.0 && !isResetting {
+                    isResetting = true
+                    
+                    Task {
+                        await MainActor.run {
+                            withAnimation {
+                                showGuideText = true
+                            }
+                        }
+                        
+                        try? await Task.sleep(nanoseconds: 4_000_000_000)
+                        
+                        await MainActor.run {
+                            withAnimation(.easeInOut(duration: 5.0)) {
+                                depthLevel = 0
+                            }
+                        }
+                        
+                        try? await Task.sleep(nanoseconds: 5_000_000_000)
+                        
+                        await MainActor.run {
+                            withAnimation {
+                                showGuideText = false
+                            }
+                            isResetting = false
+                        }
+                    }
+                }
             }
         }
     }
