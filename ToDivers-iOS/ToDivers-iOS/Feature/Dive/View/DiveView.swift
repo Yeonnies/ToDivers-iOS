@@ -7,103 +7,98 @@
 
 import SwiftUI
 
-enum DiveViewType {
-    case smallDive
-    case mediumDive
-    case bigDive
-    case superBigDive
-}
-
 struct DiveView: View {
     
-    var meshColors: [Color] {
-        switch currentType {
-        case .smallDive:
-            return [
-                Color(red: 0.75, green: 0.90, blue: 1.0),
-                Color(red: 0.65, green: 0.85, blue: 1.0),
-                Color(red: 0.75, green: 0.90, blue: 1.0),
-
-                Color(red: 0.55, green: 0.78, blue: 0.98),
-                Color(red: 0.48, green: 0.70, blue: 0.95),
-                Color(red: 0.55, green: 0.78, blue: 0.98),
-                Color(red: 0.35, green: 0.60, blue: 0.90),
-                Color(red: 0.42, green: 0.68, blue: 0.93),
-                Color(red: 0.35, green: 0.60, blue: 0.90)
-            ]
-        case .mediumDive:
-            return [
-                Color(red: 0.38, green: 0.58, blue: 0.90),
-                Color(red: 0.32, green: 0.52, blue: 0.86),
-                Color(red: 0.38, green: 0.58, blue: 0.90),
-                Color(red: 0.28, green: 0.48, blue: 0.82),
-                Color(red: 0.22, green: 0.40, blue: 0.76),
-                Color(red: 0.28, green: 0.48, blue: 0.82),
-                Color(red: 0.18, green: 0.35, blue: 0.70),
-                Color(red: 0.22, green: 0.40, blue: 0.76),
-                Color(red: 0.18, green: 0.35, blue: 0.70)
-            ]
-        case .bigDive:
-            return [
-                Color(red: 0.12, green: 0.25, blue: 0.58),
-                Color(red: 0.10, green: 0.20, blue: 0.52),
-                Color(red: 0.12, green: 0.25, blue: 0.58),
-                Color(red: 0.08, green: 0.16, blue: 0.45),
-                Color(red: 0.06, green: 0.12, blue: 0.38),
-                Color(red: 0.08, green: 0.16, blue: 0.45),
-                Color(red: 0.04, green: 0.08, blue: 0.30),
-                Color(red: 0.06, green: 0.12, blue: 0.38),
-                Color(red: 0.04, green: 0.08, blue: 0.30)
-            ]
-        case .superBigDive:
-            return [
-                Color(red: 0.04, green: 0.08, blue: 0.30),
-                Color(red: 0.06, green: 0.12, blue: 0.38),
-                Color(red: 0.03, green: 0.06, blue: 0.22),
-                Color(red: 0.01, green: 0.03, blue: 0.14),
-                Color(red: 0.01, green: 0.02, blue: 0.10),
-                Color(red: 0.01, green: 0.03, blue: 0.14),
-                Color(red: 0.005, green: 0.01, blue: 0.08),
-                Color(red: 0.01, green: 0.02, blue: 0.10),
-                Color(red: 0.005, green: 0.01, blue: 0.08)
-            ]
-        }
-    }
-    
+    @State private var depthLevel: CGFloat = 0.0 // 0 ~ 1
     
     @State private var animate1 = false
     @State private var animate2 = false
     
-    /// 호흡
     @State private var dbHistory: [CGFloat] = []
-    @State private var lastDirection: Int = 0
-    @State private var breathCount: Int = 0
-
-    @State private var currentType: DiveViewType = .smallDive
     
     @ObservedObject var monitor: SoundLevelMonitor
     
-    var body: some View {
-        MeshGradient(
-            width: 3,
-            height: 3,
-            points: [
-                [0, 0],
-                [animate2 ? 0.25 : 0.75, 0],
-                [1, 0],
-                
-                [0, 0.5],
-                [animate1 ? 0.35 : 0.75, animate1 ? 0.55 : 0.25],
-                [1, animate1 ? 0.55 : 0.25],
-                
-                [0, 1],
-                [animate2 ? 0.35 : 1, 1],
-                [1, 1]
-            ],
-            colors: meshColors
+    func oceanColor(depth: CGFloat) -> (top: Color, mid: Color, bottom: Color) {
+        
+        let top = Color(
+            hue: 0.55,
+            saturation: 0.4 + depth * 0.3,
+            brightness: 1.0 - depth * 0.5
         )
-        .ignoresSafeArea()
-        .animation(.easeInOut(duration: 1), value: currentType)
+        
+        let mid = Color(
+            hue: 0.58,
+            saturation: 0.5 + depth * 0.4,
+            brightness: 0.9 - depth * 0.6
+        )
+        
+        let bottom = Color(
+            hue: 0.60,
+            saturation: 0.6 + depth * 0.4,
+            brightness: 0.8 - depth * 0.7
+        )
+        
+        return (top, mid, bottom)
+    }
+    
+    var meshColors: [Color] {
+        let c = oceanColor(depth: depthLevel)
+        
+        return [
+            c.top, c.mid, c.top,
+            c.mid, c.bottom, c.mid,
+            c.top, c.mid, c.bottom
+        ]
+    }
+    
+    var body: some View {
+        ZStack {
+            
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: [
+                    [0, 0],
+                    [animate2 ? 0.45 : 0.55, 0],
+                    [1, 0],
+                    
+                    [0, 0.5],
+                    [animate1 ? 0.48 : 0.52, animate1 ? 0.55 : 0.45],
+                    [1, animate1 ? 0.55 : 0.45],
+                    
+                    [0, 1],
+                    [animate2 ? 0.48 : 0.52, 1],
+                    [1, 1]
+                ],
+                colors: meshColors
+            )
+            .ignoresSafeArea()
+            
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.35 * (1 - depthLevel)),
+                    Color.clear
+                ],
+                startPoint: .top,
+                endPoint: .center
+            )
+            .ignoresSafeArea()
+            
+            LinearGradient(
+                colors: [
+                    Color.clear,
+                    Color.blue.opacity(0.2 * depthLevel),
+                    Color.black.opacity(0.6 * depthLevel)
+                ],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            .blendMode(.multiply)
+        }
+        .animation(.easeInOut(duration: 0.6), value: depthLevel)
+        
+        // MARK: - 애니메이션
         .onAppear {
             withAnimation(
                 .easeInOut(duration: 3)
@@ -111,20 +106,22 @@ struct DiveView: View {
             ) {
                 animate1.toggle()
             }
+            
             withAnimation(
-                .easeInOut(duration: 9)
+                .easeInOut(duration: 6)
                 .repeatForever(autoreverses: true)
             ) {
                 animate2.toggle()
             }
         }
+        
+        // MARK: - 호흡
         .task {
             while !Task.isCancelled {
                 let current = CGFloat(monitor.decibels)
                 
-                /// dbHistory에 매 16ms마다 현재 데시벨을 배열에 쌓도록, 20개 이상이 될 경우 가장 오래된 데이터를 지움
                 dbHistory.append(current)
-                if dbHistory.count > 20 {
+                if dbHistory.count > 10 {
                     dbHistory.removeFirst()
                 }
                 
@@ -137,23 +134,14 @@ struct DiveView: View {
                 let diff = abs(current - prev)
                 
                 if diff >= 7 {
-                    breathCount += 1
-                    print("🌬 호흡", diff)
+                    withAnimation(.easeInOut(duration: 1.2)) {
+                        depthLevel += 0.03
+                        depthLevel = min(depthLevel, 1.0)
+                    }
+                    
+                    print("🌊 depth:", depthLevel)
                 }
                 
-                if breathCount >= 3 {
-                    breathCount = 0
-                    
-                    withAnimation(.easeInOut(duration: 1.5)){
-                        switch currentType {
-                        case .smallDive: currentType = .mediumDive
-                        case .mediumDive: currentType = .bigDive
-                        case .bigDive: currentType = .superBigDive
-                        case .superBigDive: break
-                        }
-                    }
-                }
-                                
                 try? await Task.sleep(nanoseconds: 16_000_000)
             }
         }
