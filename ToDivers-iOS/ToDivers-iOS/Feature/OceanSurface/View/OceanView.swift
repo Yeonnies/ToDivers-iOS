@@ -108,10 +108,10 @@ struct OceanView: View {
                     if newState == .calm {
                         Task {
                             
-                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            try? await Task.sleep(nanoseconds: 3_000_000_000)
                             
                             await MainActor.run {
-                                withAnimation(.easeInOut(duration: 1.2)) {
+                                withAnimation(.easeInOut(duration: 2)) {
                                     isDive = true
                                 }
                             }
@@ -162,19 +162,31 @@ extension OceanView {
             VStack(alignment: .center) {
                 Group {
                     if oceanState == .noisy {
-                        Text("바다가 조금 더 고요해지면, 깊이 들어갈 수 있어요")
+                        Text("바다가 아직 고요하지 않아요.")
+                            .font(Font.custom("[KIM]sonmas", size: 30))
+                        
+                        Spacer()
+                        
+                        Text("ⓘ 조용한 공간을 찾아 잠시 기다리세요.")
+                            .font(Font.custom("[KIM]sonmas", size: 16))
+                        
                     } else {
-                        Text("이제, 들어가볼까요?")
+                        Text("바다가 당신을 받아들일 준비가 되었어요")
+                            .font(Font.custom("[KIM]sonmas", size: 30))
+                        
+                        Spacer()
+                        
+                        Text("ⓘ 천천히 호흡하며 안정을 취하세요. \n점점 바다 깊이 잠수합니다.")
+                            .font(Font.custom("[KIM]sonmas", size: 16))
                     }
                 }
-                .font(Font.custom("[KIM]sonmas", size: 30))
                 .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
                 .transition(.opacity)
-                Spacer()
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(.top, 150)
+            .padding(.bottom, 50)
         }
     }
 }
